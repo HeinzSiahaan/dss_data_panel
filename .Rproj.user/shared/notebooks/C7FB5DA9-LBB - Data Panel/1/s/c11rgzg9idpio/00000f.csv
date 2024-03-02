@@ -1,0 +1,6 @@
+"0","# Your Code Here"
+"0","coplot(Log.GDP.Per.Capita ~ Year|Country.Name,"
+"0","       type = ""b"","
+"0","       data = balanced2,"
+"0","       rows = 1,"
+"0","       col = ""red"")"

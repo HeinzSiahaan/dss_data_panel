@@ -1,0 +1,28 @@
+"0","#membuat pdata.frame"
+"0","df_asia <- df_asia %>% pdata.frame(index=c(""Country.Name"",""Year""))"
+"0",""
+"0","#memeriksa struktur data"
+"0","glimpse(df_asia)"
+"1","Rows: 80"
+"1",""
+"1","
+"
+"1","Columns: 12"
+"1",""
+"1","
+"
+"1","$ Country.Name                      [3m[38;5;246m<fct>[39m[23m China, China, China, China, China, China, China, China, China, China, China, China,…
+$ Year                              [3m[38;5;246m<fct>[39m[23m 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,…
+$ Life.Ladder                       [3m[38;5;246m<pseries>[39m[23m 4.560495, 4.862862, 4.846295, 4.454361, 4.652737, 5.037208, 5.094917, 5.241090,…
+$ Log.GDP.Per.Capita                [3m[38;5;246m<pseries>[39m[23m 8.696139, 8.823968, 8.910974, 8.995829, 9.092073, 9.177827, 9.246742, 9.314875,…
+$ Social.Support                    [3m[38;5;246m<pseries>[39m[23m 0.7470113, 0.8108524, 0.7482873, 0.7980344, 0.7677526, 0.7871712, 0.7878182, 0.…
+$ Healthy.Life.Expectancy.At.Birth  [3m[38;5;246m<pseries>[39m[23m 65.660, 65.920, 66.180, 66.440, 66.700, 66.960, 67.220, 67.480, 67.740, 68.000,…
+$ Freedom.To.Make.Life.Choices      [3m[38;5;246m<pseries>[39m[23m NA, NA, 0.8530720, 0.7711433, 0.8047936, 0.8241624, 0.8082551, 0.8047239, NA, N…
+$ Generosity                        [3m[38;5;246m<pseries>[39m[23m NA, -0.17888285, -0.09518377, -0.16326375, -0.13618167, -0.18927115, -0.1874886…
+$ Perceptions.Of.Corruption         [3m[38;5;246m<pseries>[39m[23m NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 0.6989297, 0.80…
+$ Positive.Affect                   [3m[38;5;246m<pseries>[39m[23m 0.6576588, 0.6639774, 0.7051333, 0.6696660, 0.6581010, 0.7100548, 0.6891598, 0.…
+$ Negative.Affect                   [3m[38;5;246m<pseries>[39m[23m 0.1695804, 0.1586135, 0.1469630, 0.1616502, 0.1580997, 0.1335035, 0.1587030, 0.…
+$ Confidence.In.National.Government [3m[38;5;246m<pseries>[39m[23m NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 0.3503313, 0.24…"
+"1",""
+"1","
+"

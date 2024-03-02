@@ -1,0 +1,7 @@
+"0","# Perceptions.Of.Corruption"
+"0","# Your Code Here"
+"0","coplot(Perceptions.Of.Corruption ~ Year|Country.Name,"
+"0","       type = ""b"","
+"0","       data = balanced2,"
+"0","       rows = 1,"
+"0","       col = ""red"")"

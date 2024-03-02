@@ -1,0 +1,5 @@
+"0","# membuat Common effect model "
+"0","cem <- plm(Life.Ladder ~ Log.GDP.Per.Capita + Social.Support + Freedom.To.Make.Life.Choices + Generosity + Positive.Affect + Negative.Affect, "
+"0","           data = ladder_train,"
+"0","           index = c(""Country.Name"",""Year""),"
+"0","           model = ""pooling"")"

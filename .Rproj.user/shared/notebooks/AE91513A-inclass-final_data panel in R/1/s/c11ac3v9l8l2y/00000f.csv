@@ -1,0 +1,2 @@
+"0","# drop kolom yang tidak digunakan"
+"0","balance1 <- balance1 %>% select(-Confidence.In.National.Government)"

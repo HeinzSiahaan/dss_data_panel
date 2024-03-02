@@ -1,0 +1,6 @@
+"0","# membuat fixed effect model "
+"0","fem <- plm(Life.Ladder ~ Log.GDP.Per.Capita + Social.Support + Freedom.To.Make.Life.Choices + Generosity + Positive.Affect + Negative.Affect, "
+"0","           data = ladder_train,"
+"0","           index = c(""Country.Name"",""Year""),"
+"0","           model = ""within"")"
+"0",""

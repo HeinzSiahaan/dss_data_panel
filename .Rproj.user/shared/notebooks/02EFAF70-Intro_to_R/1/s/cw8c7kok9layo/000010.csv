@@ -1,0 +1,8 @@
+"0","# base"
+"0","# drop kolom check"
+"0","#P_JAWA <- pengangguran[,-6] "
+"0",""
+"0","# mengubah tipe data provinsi"
+"0","P_JAWA$Provinsi <- as.character(P_JAWA$Provinsi)"
+"2","Error: object 'P_JAWA' not found
+"

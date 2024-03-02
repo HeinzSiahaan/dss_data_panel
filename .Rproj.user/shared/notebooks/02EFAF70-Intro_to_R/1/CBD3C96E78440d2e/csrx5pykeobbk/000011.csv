@@ -1,0 +1,7 @@
+"0","TIK <- read.csv(""data_input/TIK.csv"", sep = "";"", check.names = F)"
+"0",""
+"0","TIK %>% "
+"0","  filter(Provinsi %in% c(""BANTEN"",""DKI JAKARTA"",""JAWA BARAT"",""JAWA TENGAH"",""DI YOGYAKARTA"",""JAWA TIMUR"")) %>% "
+"0","  pivot_longer(cols = c(""2015"", ""2016"", ""2017"", ""2018""), values_to = ""Proporsi_Ketrampilan"", names_to = ""Tahun"") %>% "
+"0","  mutate(Provinsi = as.factor(Provinsi),"
+"0","               Tahun = as.factor(Tahun))"

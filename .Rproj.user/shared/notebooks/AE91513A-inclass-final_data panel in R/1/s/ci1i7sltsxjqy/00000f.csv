@@ -1,0 +1,6 @@
+"0","# Error model random effect karena jumlah variabel prediktor dan target > jumlah index individu"
+"0",""
+"0","# plm(Life.Ladder ~ Log.GDP.Per.Capita + Social.Support + Perceptions.Of.Corruption + Negative.Affect + Positive.Affect + Generosity, "
+"0","#            data = ladder_train,"
+"0","#            index = c(""Country.Name"",""Year""),"
+"0","#            model = ""random"")"

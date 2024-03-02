@@ -1,0 +1,1032 @@
+---
+title: "LBB - Unveiling Socio Demographic Patterns: <br> Exploring Data Panels with plm() in R"
+subtitle: 'Data Panels with plm() in R'
+author: "Heinz Metrosan Donradt S"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+    df_print: paged
+    theme: united
+    highlight: breezedark
+    css: assets/style.css
+---
+
+```{r setup, include=FALSE}
+# clean up the environment
+rm(list = ls())
+
+# setup chunk options
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  cache = TRUE,
+  fig.align = "center",
+  comment = "#>"
+)
+
+options(scipen = 9999)
+```
+
+<style>
+body {
+text-align: justify}
+</style>
+
+## Setup Library/Package
+
+_Package_ adalah kumpulan fungsi R, data, dan kode yang dikompilasi dalam format yang terdefinisi dengan baik. Direktori tempat penyimpanan paket disebut library. 
+
+Untuk dapat mengikuti materi ini, peserta diharapkan sudah menginstall beberapa packages di bawah ini. Apabila package tersebut belum terinstall, silahkan melakukan instalasi package dengan copy dan jalankan code berikut pada bagian _console_
+
+> install.packages(c("knitr", "rmarkdown", "dplyr","tidyr","lubridate", "ggcorplot", "ggplot2", "gplots", "foreign", "plotly","plm","lfe","lmtest","car","tseries","MLmetrics"))
+
+Apabila package sudah terinstall, silahkan jalankan code dibawah ini untuk mengaktifkan package-package yang akan digunakan pada materi ini.
+
+```{r}
+#Packages untuk pengolahan dataframe
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+#Packages untuk membuat visualisasi
+library(ggcorrplot)
+library(gplots)
+library(ggplot2)
+library(plotly)
+library(foreign)
+
+#Packages untuk melakukan analisis
+library(plm)
+library(lfe)
+library(lmtest)
+library(car)
+library(tseries)
+library(MLmetrics)
+```
+
+***
+
+
+# Data Panel
+
+Data panel merupakan gabungan data cross section dan time series (runtun/ deret waktu). Dengan kata lain, data panel merupakan data dari beberapa individu sama yang diamati dalam kurun waktu tertentu. Terkadang data pane     
+
+contoh data panel"
+
+- Tingkat pengangguran tahunan setiap negara bagian selama beberapa tahun
+- Penjualan triwulanan masing-masing toko selama beberapa kuartal
+
+**1. Keuntungan Data Panel**
+
+Data panel yang menggabungkan data data cross section dan time series, memiliki beberapa keunggulan dibandingkan data cross-sectional saja atau data deret waktu saja, antara lain:
+
+- Mendapatkan sampel yang besar sehingga lebih banyak informasi dan lebih sedikit multikolinieritas di antara variabel-variabel sehingga meningkatkan efisiensi estimasi ekonometrika
+
+- Model yang dapat diinterpretasikan, kita dapat menginterpretasikan koefisien regresi dalam kerangka efek cross-section dan time-series.
+
+**2. Struktur Data Panel**
+
+Data panel memiliki tiga jenis data, yaitu cross section, pooled cross section, dan panel.
+
+- **Cross Section Data**
+
+Data cross sectional adalah jenis data yang dikumpulkan dengan mengamati banyak subjek pada satu titik atau periode waktu.
+
+```{r, out.width = "100%", echo = FALSE, fig.align = "center"}
+knitr::include_graphics("assets/csdata.png")
+```
+
+- **Pooled Cross Section Data**
+
+Pooled Cross sectional adalah jenis data yang mengamati satu subjek pada banyak titik atau periode waktu.
+
+```{r, out.width = "100%", echo = FALSE, fig.align = "center"}
+knitr::include_graphics("assets/timeseriesdata.png")
+```
+
+- **Panel Data**
+
+Panel data adalah jenis data yang mengamati banyak subjek pada banyak titik atau periode waktu.
+
+```{r, out.width = "100%", echo = FALSE, fig.align = "center"}
+knitr::include_graphics("assets/paneldata.png")
+```
+
+- **Balance - Unbalanced Panel Data**
+
+Jika jumlah unit waktu sama untuk setiap individu, maka data 
+disebut *balanced panel*. Jika sebaliknya, yakni jumlah unit waktu berbeda untuk setiap individu, maka disebut *unbalanced panel*
+
+```{r, out.width = "100%", echo = FALSE, fig.align = "center"}
+knitr::include_graphics("assets/balance-unbalance_data.png")
+```
+
+**3. Model Data Panel**
+
+Jika kita memiliki **T** periode waktu (t = 1, 2, ..., T) dan **N** jumlah individu (i = 1, 2, ..., N), maka dengan data panel kita akan memiliki total unit observasi sebanyak **NT**. 
+
+$$y_{it} = \beta_0+\beta _{1t}*x_{1t}+u_{it}$$
+Dimana:
+
+- $y_{it}$ adalah variabel target
+- indeks $i$ mendefiniskan individu, wilayah, kota, perlakuan dll.
+- indeks $t$ mendefinisikan waktu.
+- $\beta_0$ adalah intercept
+- $\beta _{1t}*x_{1t}$ adalah koefisien untuk variabel prediktor 1
+- $u_{it}$ adalah disturbance
+
+berdasarkan model tersebut indeks `i` menjadi dimensi untuk cross sectional dan indeks `t` menjadi dimensi untuk deret waktu. Sedangkan $u_{it}$ adalah nilai yang menunjukkan heterogenitas antar cross sectional dan deret waktu di dalam mode, yang didefinisikan sebagai berikut:
+
+$$u_{it} = \mu _i+\lambda _t+\upsilon _{it}$$
+dimana:
+
+- $\mu _i$ : mewakili heterogenitas individu (cross section) yang tidak dapat diamati
+- $\lambda _t$ : menunjukkan heterogenitas waktu yang tidak dapat diamati
+- $\upsilon _{it}$ : merupakan nilai error sisaan
+
+Dua komponen pertama $\mu _i$ dan $\lambda _t$ disebut juga sebagai *within component* sedangkan komponen terakhir $\upsilon _{it}$ merupakan *panel or between component*
+
+***
+
+## Pemodelan
+
+Terdapat tiga pendekatan yang digunakan dalam model panel yaitu *Common/ Polled Effects*, *Fixed Effects* dan *Random Effects*.
+
+**1. Model Common/ Pooled Effects (CEM)**
+
+Model gabungan atau common effect model (CEM) atau pooled least square (PLS) merupakan pendekatan model data panel yang sederhana karena mengkombinasikan data time series dan cross section, tanpa memperhatikan pengaruh spesifik waktu maupun individu. Koefisien regresi (intersep ataupun kemiringan) diasumsikan konstan antar individu dan waktu. Metode ini bisa menggunakan pendekatan ordinary least square (OLS) atau metode kuadrat terkecil (MKT) untuk mengestimasi model data panel. Untuk membuat model CEM di R dapat menggunakan fungsi `plm()` dari package plm dengan parameter sebagai berikut:
+
+- `formula` = Target ~ Prediktor
+- `data`    = berupa dataframe
+- `index`   = c("kolom_individu","kolom_waktu")
+- `model`   = "pooling"
+
+
+
+**2. Fixed Effects **
+
+Model pengaruh tetap atau fixed effect model (FEM) merupakan model yang mengasumsikan antara unit individu atau waktu memiliki perilaku yang berbeda, terlihat dari nilai intersep yang berbeda untuk setiap unit individu atau waktu, tetapi konstan pada nilai koefisien kemiringan dan koefisien regresi antara unit individu maupun waktu (Gujarati dan Porter 2009). Pendugaan parameter model pengaruh tetap dapat menggunakan Metode Kuadrat Terkecil Peubah Boneka (least square dummy variable) dan MKT. Untuk membuat model CEM di R dapat menggunakan fungsi `plm()` dari package plm dengan parameter sebagai berikut:
+
+- `formula` = Target ~ Prediktor
+- `data`    = berupa dataframe
+- `index`   = c("kolom_individu","kolom_waktu")
+- `model`   = "within"
+
+
+**3. Random Effects**
+
+Menurut Baltagi (2011), model pengaruh acak atau random effect model digunakan ketika individu amatan mengikuti kaidah pengacakan dari sejumlah populasi yang besar sehingga pengaruh pada setiap individu bersifat acak. Pendugaan parameter pada model pengaruh acak yaitu dengan metode kuadrat terkecil terampat (generalized least square). Model ini memiliki asumsi bahwa tidak ada korelasi antara pengaruh spesifik individu dan pengaruh spesifik waktu dengan peubah bebas sehingga komponen sisaan dari kedua pengaruh spesifik dimasukkan ke dalam model. Untuk membuat model CEM di R dapat menggunakan fungsi `plm()` dari package plm dengan parameter sebagai berikut:
+
+- `formula` = Target ~ Prediktor
+- `data`    = berupa dataframe
+- `index`   = c("kolom_individu","kolom_waktu")
+- `model`   = "random"
+
+***
+
+## Pemilihan Model Terbaik
+Untuk memilih model mana yang terbaik dari ketiga model diatas, perlu dilakukan pengujian hipotesis berikut ini:
+
+**Uji Chow**
+
+Menurut Ghozali dan Ratmono (2013), uji chow digunakan untuk memilih pendekatan yang lebih baik antara model gabungan dengan model pengaruh tetap. Untuk melakukan uji Chow dapat menggunakan fungsi `pooltest(model_cem, model_fem)`, dengan hipotesis yang diujikan adalah sebagai berikut.
+
+- H0 : Model gabungan
+- H1 : Model pengaruh tetap
+
+Keputusan tolak H0 (model pengaruh tetap terpilih) apabila nilai p-value < α.
+
+***
+
+**Uji Hausman**
+
+Uji spesifikasi Hausman membandingkan model pengaruh tetap dan model pengaruh acak. Jika hipotesis nol yang menyatakan tidak ada korelasi antara pengaruh individu dengan regresor tidak ditolak, model pengaruh random disarankan daripada pengaruh tetap (Susanti 2013). Untuk melakukan uji Chow di R dapat menggunakan fungsi `phtest(model_rem, model_fem)`, dengan Hipotesis yang diuji adalah sebagai berikut. 
+
+- H0 : Model pengaruh acak
+- H1 : Model pengaruh tetap
+
+Keputusan tolak H0 (model pengaruh tetap terpilih) apabila nilai p-value < α.
+
+***
+
+**Pengujian Lanjutan**
+
+Apabila **model gabungan** atau **model pengaruh acak** yang terpilih sebagai model terbaik, perlu dilakukan uji lanjutan untuk memeriksa apakah model dipengaruhi oleh individu/waktu/individu & waktu. Untuk memeriksa pengaruh tersebut digunakan **Uji Lagrange Multiplier**. 
+
+Di R untuk melakukan Uji Lagrange Multiplier dapat dilakukan dengan menggunakan fungsi `plmtest()` dari package `plm` dengan parameter:
+
+- x      = model terpilih
+- type   = `"bp"` , menggunakan Breusch Pagan test
+- effect =
+  + `"time"`       : untuk menguji pengaruh waktu
+  + `"individual"` : untuk menguji pengaruh individu
+  + `"twoways"`    : untuk menguji pengaruh individu & waktu
+  
+berikut hipotesis pengujian untuk pemeriksaan setiap pengaruh:
+
+
+**Pemeriksaan Pengaruh Individu & Waktu**
+
+Hipotesis yang diuji adalah sebagai berikut.
+
+- H0 : Tidak ada pengaruh individu & waktu
+- H1 : Ada pengaruh individu & waktu
+
+**Pemeriksaan Pengaruh Individu**
+
+Hipotesis yang diuji adalah sebagai berikut.
+
+- H0 : Tidak ada pengaruh individu
+- H1 : Ada pengaruh individu
+
+**Pemeriksaan Pengaruh Waktu**
+
+Hipotesis yang diuji adalah sebagai berikut.
+
+- H0 : Tidak ada pengaruh waktu
+- H1 : Ada pengaruh waktu
+
+
+dengan ketentuan untuk ketiga hipotesis adalah H0 ditolak jika P-value < α. Dimana nilai α yang umum digunakan adalah sebesar 5%.
+
+***
+
+## Pengujian Asumsi
+
+dikarenakan analisis data panel menggunakan konsep regresi dan time series maka ada beberapa Asumsi yang perlu dipenuhi sebagai berikut:
+
+Asumsi model linear regression:
+
+1. No Multicollinearity (VIF)
+2. Normality of Residuals
+3. Homogenitas of Residuals
+
+Asumsi Time Series:
+
+1. No Autocorelation
+
+**Note**: Pengujian Asumsi hanya perlu dilakukan untuk model yang akan digunakan
+
+
+**1. Pemeriksaan Multikolinieritas**
+
+Multicollinearity adalah kondisi adanya **korelasi antar prediktor yang kuat**. Hal ini tidak diinginkan karena menandakan prediktor redundan pada model, yang seharusnya dapat dipilih salah satu saja dari variable yang hubungannya amat kuat tersebut. Harapannya **tidak terjadi multicollinearity**. Pemeriksaan Multikolinieritas bisa dilakukan dengan menggunakan fungsi fungsi `vif()`, dengan ketentuan
+
+- nilai VIF > 10: terjadi multicollinearity pada model
+- nilai VIF < 10: tidak terjadi multicollinearity pada model
+
+**Note**: Pemeriksaan asumsi multikolinieritas bisa dilakukan diawal sebelum dilakukan pemodelan data panel, dengan cara terlebih dahulu dilakukan pembuatan model regresi dengan fungsi `lm()` dan akan diujikan menggunakan fungsi `vif()`.
+
+**2. Pengujian Asumsi Normalitas Residual**
+
+Model diharapkan menghasilkan **error yang berdistribusi normal**. Dengan begitu, error lebih banyak berkumpul di sekitar angka nol. Pengujian asumsi normalitas di R dapat dilakukan dengan menggunakan fungsi `shapiro.test()`. dengan hipotesis yang diujikan adalah sebagai berikut.
+
+- H0 : Sisaan berdistribusi normal
+- H1 : Sisaan tidak berdistribusi normal
+
+dengan ketentuan H0 ditolak jika P-value < α. Dimana nilai α yang umum digunakan adalah sebesar 5%.
+
+
+**3. Pengujian Asumsi Homogenitas Residual**
+
+Diharapkan error yang dihasilkan oleh model menyebar secara acak atau dapat dikatakan **variasi konstan**. Pengujian asumsi Homogenitas di R dapat dilakukan dengan menggunakan fungsi `bptest()`, dengan hipotesis yang diujikan adalah sebagai berikut.
+
+- H0 : Sisaan memiliki ragam homogen
+- H1 : Sisaan tidak memiliki ragam homogen
+
+dengan ketentuan H0 ditolak jika P-value < α. Dimana nilai α yang umum digunakan adalah sebesar 5%.
+
+**4. Pengujian Asumsi Autokorelasi**
+
+Untuk mengecek ada/tidaknya bisa menggunakan uji Ljung-box dengan menggunakan fungsi `Box.test(residual model, type = "Ljung-Box)`, dengan hipotesis yang diujikan adalah sebagai berikut.
+
+- H0 : tidak terjadi autokorelasi pada sisaan
+- H1 : terjadi autokorelasi pada sisaan
+
+dengan ketentuan H0 ditolak jika P-value < α. Dimana nilai α yang umum digunakan adalah sebesar 5%.
+
+***
+
+## Alur Kerja Data Panel
+Analisis data panel di R dapat dilakukan dengan mengikuti alur kerja berikut ini:
+```{r, out.width = "100%", echo = FALSE, fig.align = "center"}
+knitr::include_graphics("assets/data panel workflow.png")
+```
+
+
+***
+
+# Case Study Pemodelan Tingkat Kebahagiaan Beberapa Negara di Asia tenggara tahun 2006 s.d 2022
+
+Asia Tenggara adalah wilayah yang kaya akan keragaman budaya, ekonomi, dan sosial. Negara-negara di kawasan ini telah mengalami perkembangan yang signifikan selama beberapa tahun terakhir, dengan perubahan ekonomi, demografis, dan politik yang berdampak pada kualitas hidup penduduk. Studi mengenai tingkat kebahagiaan di negara-negara Asia Tenggara menjadi semakin relevan seiring dengan pergeseran fokus dari pertumbuhan ekonomi semata menuju peningkatan kesejahteraan dan kualitas hidup. Dalam kerangka ini, analisis regresi data panel dapat memberikan wawasan mendalam tentang bagaimana berbagai faktor memengaruhi kebahagiaan di kawasan ini, dengan mempertimbangkan perbedaan antar negara serta evolusi hubungan tersebut dari waktu ke waktu, sejalan dengan indikator-indikator yang dipantau dalam World Happiness Report.
+
+Sebagai data scientis kita diminta untuk menganalisis tingkat kebahagiaan beberapa negara di asia tenggara berdasarkan informasi socio demografi yang tersedia pada World Happiness Report.
+
+## Data Preparation
+
+Untuk menganalisis tingkat kebahagiaan beberapa negara di asia tenggara menggunakan data yang diperoleh dari World Happiness Report 2023 yang dipublish melalui kaggle oleh [USAMA BUTTAR](https://www.kaggle.com/datasets/usamabuttar/world-happiness-report-2005-present).
+
+Berikut adalah beberapa informasi dari setiap kolom:
+
+  + `Country.Name` : Informasi nama negara
+  + `Regional.Indicator` : Informasi regional negara
+  + `Year` : tahun
+  + `Life.Ladder` : tingkat kebahagiaan [1-10]
+  + `Log.GDP.Per.Capita` : Log Gross Domestic Product per orang di suatu negara
+  + `Social.Support` : memiliki seseorang yang dapat diandalkan di saat-saat sulit.
+  + `Healthy.Life.Expectancy.At.Birth` :
+  + `Freedom.To.Make.Life.Choices` : kebebasan untuk menentukan pilihan [0-1]
+  + `Generosity` : seberapa sering seseorang mengeluarkan uang untuk donasi perbulan
+  + `Perceptions.Of.Corruption` : Persepsi terhadap korupsi [0-1]
+  + `Positive.Affect` : rata-rata ukuran efek hari sebelumnya untuk tawa, kesenangan, dan interest
+  + `Negative.Affect` : rata-rata dari ukuran efek hari sebelumnya untuk kekhawatiran, kesedihan, dan kemarahan
+  + `Confidence.In.National.Goverment` : seberapa percaya terhadap pemerintahan
+  
+***
+
+Pada tahapan preparasi data ini akan dilakukan beberapa hal berikut:
+
+1. Read data 
+2. Mengambil data wilayah asia tenggara
+
+```{r}
+# 1. import dataset
+df <- read.csv("data_input/World_Happiness_Report.csv")
+
+# 2. mengambil data wilayah asia tenggara dan membuang kolom regional indikator
+df_asia <- df %>% filter(Regional.Indicator == "East Asia") %>% select(-Regional.Indicator)
+
+
+head(df_asia)
+```
+
+
+## Pemeriksaan Balancing Data
+Untuk memeriksa apakah dta kita sudah balance dapat kita gunakan 2 cara yakni:
+
+**1. Melihat frekuensi data berdasarkan index individu**
+
+```{r}
+# Your Code Here
+table(df_asia$Country.Name)
+```
+Result : Kita akan membuang data `Hong Kong S.A.R. of China` karena jumlah datanya 12 sangat jauh dengan data optimal 17.
+
+**2. Menggunakan fungsi `is.pbalanced()` **
+
+Untuk melakukannya dapat kita gunakan fungsi `is.pbalanced()` dengan catatan data dalam format pdata.frame. Apabila data belum dalam format pdata.frame, kita dapat menambahkan parameter `index("kolom individu", "kolom waktu")`. Hasil yang diharapkan dari pemeriksaannya adalah *TRUE* yang artinya data panel sudah seimbang.
+```{r}
+# Your Code Here
+is.pbalanced(df_asia,index=c("Country.Name","Year"))
+```
+Dari hasil pemeriksaan frekuensi dan balancing data diatas terlihat bahwa:
+
+- ...
+- ...
+
+
+```{r}
+df_asia <- df_asia %>% filter(Country.Name %in% c("China","Japan","Mongolia","South Korea","Taiwan Province of China"))
+```
+
+***
+
+### Penyesuaian Struktur Data
+
+**1. Membuat Panel Data Frame**
+
+Agar data kita dapat melakukan balancing, kita perlu mengubah format data yang kita miliki menjadi sebuah panel data frame terlebih dahulu. Untuk memembuat panel data frame dapat kita lakukan dengan fungsi `pdata.frame()` dengan parameter:
+
+- `data`  : data yang akan digunakan
+- `index` : c("informasi individu","informasi waktu")
+
+```{r}
+#membuat pdata.frame
+df_asia <- df_asia %>% pdata.frame(index=c("Country.Name","Year"))
+
+#memeriksa struktur data
+glimpse(df_asia)
+```
+Dengan pengubahan tipe data menjadi pdata.frame akan otomatis mengubah type data dari setiap kolom, 
+
+- kolom yang dijadikan index akan bertipe factor
+- selain kolom index akan menjadi pseries
+
+**2. Mememeriksa Dimensi Data**
+
+untuk memeriksa dimendi data panel dapat kita gunakan fungsi `pdim()`
+```{r}
+# Your Code Here
+pdim(df_asia)
+```
+dari pemeriksaan dimensi data panel diatas dapat kita ketahui bahwa:
+
+- Kita memiliki 5 individu/negara
+- Datanya berjumlah 15-17 (belum balanced)
+
+
+***
+
+### Balancing Data
+
+Apabila data panel yang kita miliki tidak *balance* kita dapat melakukan balancing menggunakan fungsi `make.pbalanced` dengan parameter `balance.type` yang dapat diisi dengan 3 opsi berikut:
+
+1. `fill` : untuk setiap kolom waktu yg hilang akan diberikan nilai NA
+2. `shared.times` : akan diambil keseluruhan individu dgn ketentuan informasi waktu terdapat di semua individu
+3. `shared.individuals` : akan individu dengan ketentuan informasi waktu lengkap
+
+**1. Balancing menggunakan fill**
+```{r}
+# Your Code Here
+balance1 <- df_asia %>% make.pbalanced(balance.type = "fill")
+table(balance1$Country.Name)
+```
+
+**2. Balancing menggunakan shared.times**
+```{r}
+# Your Code Here
+balance2 <- df_asia %>% make.pbalanced(balance.type = "shared.times")
+table(balance2$Country.Name)
+```
+
+**3. Balancing menggunakan shared.individuals**
+```{r}
+# Your Code Here
+balance3 <- df_asia %>% make.pbalanced(balance.type = "shared.individuals")
+table(balance3$Country.Name)
+```
+Berdasarkan kondisi data yang dimiliki, kita akan menggunakan data hasil balancing dengan metode `fill` untuk mendapatkan informasi paling optimal yang akan tersimpan pada objek bernama `balance1`.
+
+```{r}
+# Periksa kembali keseimbangan data
+is.pbalanced(balance1)
+```
+
+```{r}
+# pengecekan kembali dimensi data
+pdim(balance1)
+
+```
+- Ternyata tidak ada negara  yang memiliki data yang lengkap sebelumnya, sehingga angka T optimal = 18
+- ...
+- ...
+
+***
+
+## Pemeriksaan Missing Value
+
+sebelum kita periksa kelengkapan data kita perlu mengetahui berapa banyak informasi waktu yang ditambahkan dari tahapan sebelumnya 
+```{r}
+colSums(is.na(balance1)) - colSums(is.na(df_asia))
+```
+berdasarkan pemeriksaan diatas dapat diketahui bahwa dari data df_asia ketika dilakukan balancing terjadi penambahan 10 baris nilai NA untuk setiap kolom. 
+
+Tahap selanjutnya adalah memeriksa kelengkapan data hasil balancing
+```{r}
+colSums(is.na(balance1))
+```
+Berdasarkan hasil pemeriksaan diatas kita melihat secara keseluruhan terdapat cukup banyak kolom yang memiliki nilai missing
+
+- ...
+- ...
+
+```{r}
+balance1 <- balance1%>%select(-Confidence.In.National.Government)
+```
+
+Untuk pemeriksaan dan melakukan pengisian nilai yang hilang maka akan dilakukan dengan cara interpolasi secara terpisah untuk setiap negara.
+
+**1. Cambodia**
+
+```{r}
+# periksa nilai missing per negara
+cam <- balance1 %>% filter(Country.Name=="Cambodia")
+colSums((is.na(cam)))  
+```
+insight: ...
+
+untuk mengisi nilai yang hilang dengan nilai rata-rata dari nilai yang dekat dengan nilai missing menggunakan fungsi `na.fill()` dengan `fill = "extend"`
+```{r}
+# mengisi nilai missing 
+cam <- cam %>% mutate(Freedom.To.Make.Life.Choices=na.fill(Freedom.To.Make.Life.Choices,fill="extend"),
+                      Perceptions.Of.Corruption=na.fill(Perceptions.Of.Corruption,fill="extend"),
+                      Positive.Affect=na.fill(Positive.Affect,fill="extend"))
+  
+anyNA(cam)
+```
+
+**2. Indonesia**
+
+```{r}
+# periksa nilai missing per negara
+idn <- balance1 %>% filter(Country.Name=="Indonesia")
+colSums((is.na(idn)))  
+```
+insight: ...
+
+**3. Philippines**
+
+```{r}
+# periksa nilai missing per negara
+ph <- balance1 %>% filter(Country.Name == "Philippines")
+colSums(is.na(ph))
+```
+insight: ...
+
+```{r}
+# mengisi nilai missing 
+ph <- ph %>% mutate(
+  Life.Ladder = na.fill( Life.Ladder ,fill = "extend"),
+  Log.GDP.Per.Capita = na.fill(Log.GDP.Per.Capita ,fill = "extend"),
+  Social.Support = na.fill(Social.Support ,fill = "extend"),
+  Healthy.Life.Expectancy.At.Birth = na.fill(Healthy.Life.Expectancy.At.Birth ,fill = "extend"),
+  Freedom.To.Make.Life.Choices = na.fill(Freedom.To.Make.Life.Choices ,fill = "extend"),
+  Generosity = na.fill(Generosity ,fill = "extend"),
+  Perceptions.Of.Corruption = na.fill(Perceptions.Of.Corruption ,fill = "extend"),
+  Positive.Affect = na.fill(Positive.Affect ,fill = "extend"),
+  Negative.Affect = na.fill(Negative.Affect, fill = "extend"))
+
+
+anyNA(ph)
+```
+
+**4. Thailand**
+
+```{r}
+# periksa nilai missing per negara
+thai <- balance1 %>% filter(Country.Name == "Thailand")
+colSums(is.na(thai))
+  
+```
+insight : 
+
+
+**5. Vietnam**
+
+```{r}
+# periksa nilai missing per negara
+viet <- balance1 %>% filter(Country.Name == "Vietnam")
+colSums(is.na(viet))
+```
+insight: ...
+
+```{r}
+#mengisi nilai missing
+viet <- viet %>% mutate(
+  Social.Support = na.fill(Social.Support ,fill = "extend"),
+  Freedom.To.Make.Life.Choices = na.fill(Freedom.To.Make.Life.Choices ,fill = "extend"),
+  Generosity = na.fill(Generosity ,fill = "extend"),
+  Perceptions.Of.Corruption = na.fill(Perceptions.Of.Corruption ,fill = "extend"),
+  Positive.Affect = na.fill(Positive.Affect ,fill = "extend"),
+  Negative.Affect = na.fill(Negative.Affect, fill = "extend"))
+
+
+anyNA(viet)
+```
+insight: ...
+
+**6. Malaysia**
+
+```{r}
+# periksa nilai missing per negara
+Malay <- balance1 %>% filter(Country.Name == "Malaysia")
+colSums(is.na(Malay))
+```
+insight: ...
+
+```{r}
+#mengisi nilai missing
+Malay <- Malay %>% mutate(
+  Life.Ladder = na.fill( Life.Ladder ,fill = "extend"),
+  Log.GDP.Per.Capita = na.fill(Log.GDP.Per.Capita ,fill = "extend"),
+  Social.Support = na.fill(Social.Support ,fill = "extend"),
+  Healthy.Life.Expectancy.At.Birth = na.fill(Healthy.Life.Expectancy.At.Birth ,fill = "extend"),
+  Freedom.To.Make.Life.Choices = na.fill(Freedom.To.Make.Life.Choices ,fill = "extend"),
+  Generosity = na.fill(Generosity ,fill = "extend"),
+  Perceptions.Of.Corruption = na.fill(Perceptions.Of.Corruption ,fill = "extend"),
+  Positive.Affect = na.fill(Positive.Affect ,fill = "extend"),
+  Negative.Affect = na.fill(Negative.Affect, fill = "extend"))
+
+
+anyNA(Malay)
+```
+insight: ...
+
+**7. Singapore**
+
+```{r}
+# periksa nilai missing per negara
+sgp <- balance1 %>% filter(Country.Name == "Singapore")
+colSums(is.na(sgp))
+  
+```
+insight: ...
+
+```{r}
+#mengisi nilai missing
+sgp <- sgp %>% mutate(
+  Life.Ladder = na.fill( Life.Ladder ,fill = "extend"),
+  Log.GDP.Per.Capita = na.fill(Log.GDP.Per.Capita ,fill = "extend"),
+  Social.Support = na.fill(Social.Support ,fill = "extend"),
+  Healthy.Life.Expectancy.At.Birth = na.fill(Healthy.Life.Expectancy.At.Birth ,fill = "extend"),
+  Freedom.To.Make.Life.Choices = na.fill(Freedom.To.Make.Life.Choices ,fill = "extend"),
+  Generosity = na.fill(Generosity ,fill = "extend"),
+  Perceptions.Of.Corruption = na.fill(Perceptions.Of.Corruption ,fill = "extend"),
+  Positive.Affect = na.fill(Positive.Affect ,fill = "extend"),
+  Negative.Affect = na.fill(Negative.Affect, fill = "extend"))
+
+
+anyNA(sgp)
+```
+Setelah semua negara tidak lagi terdapat nilai yang missing, selanjutnya kita akan gabungkan kembali dan akan disimpan pada objek dengan nama balanced2
+
+```{r}
+# Your Code Here
+balanced2 <- bind_rows(cam,idn,ph,thai,viet,Malay,sgp) 
+```
+
+Pemeriksaan Kembali keseimbangan data
+```{r}
+# Your Code Here
+pdim(balanced2)
+```
+
+Pemeriksaan Kembali kelengkapan data
+```{r}
+# Your Code Here
+colSums(is.na(balanced2))
+```
+
+Data telah siap untuk digunakan pada tahapan selanjutnya
+
+## Exploratory Data Analysis
+
+### Ringkasan Data
+
+```{r}
+summary(balanced2)
+```
+Berdasarkan ringkasan diatas dapat kita ketahui beberapa hal berikut:
+
+- ...
+- ...
+
+
+### Hubungan Antar Variabel
+
+Untuk mengetahui seberapa besar tingkat hubungan antar variabel prediktor terhadap variabel target, dapat kita gunakan fungsi `ggcorrplot`.
+```{r}
+# Your Code Here
+balanced2 %>% select(-Country.Name,-Year) %>%cor()%>%ggcorrplot(type="lower",lab=TRUE)
+```
+Berdasarkan hasil plot heatmap diatas, dapat diketahui bahwa 
+
+- Variabel yang memiliki Hubungan Kuat terhadap Life.Ladder adalah:
+  - Log.GDP.Per.Capita
+  - Social.Support
+  - Healthy.Life.Expectancy.At.Birth
+  - Perception.Of.Corruption
+  - Negative Affect
+
+- Terdapat indikasi multikolinieritas antara
+  - Log.GDP.Per.Capita dengan Healthy.Life.Expectancy.At.Birth
+
+### Explorasi Socio demografi
+
+Untuk melihat lebih dalam informasi dari data yang kita miliki dapat kita lakukan dengan menggunakan fungsi `coplot()` dengan parameter
+
+- `formula` = diisikan dengan target ~ index1 given index2 
+- `type`    = `"l"` untuk line dan `"b"` untuk point & line plot
+- `data`    = dataset
+- `rows`    = banyaknya baris panel plot yang dibuat
+- `col`     = warna plot yang disajikan
+
+**1. Life.ladder**
+
+```{r}
+# Your Code Here
+coplot(Life.Ladder ~ Year|Country.Name,
+       type = "b",
+       data = balanced2,
+       rows = 1,
+       col = "red")
+
+```
+Berdasarkan Line plot diatas dapat kita ketahui bahwa :
+
+- ...
+- ...
+
+**2. Log.GDP.Per.Capita**
+
+```{r}
+# Your Code Here
+coplot(Log.GDP.Per.Capita ~ Year|Country.Name,
+       type = "b",
+       data = balanced2,
+       rows = 1,
+       col = "red")
+```
+
+Berdasarkan plot diatas dapat kita ketahui bahwa :
+
+- ...
+
+**3. Social.Support**
+```{r}
+# Your Code Here
+coplot(Social.Support ~ Year|Country.Name,
+       type = "b",
+       data = balanced2,
+       rows = 1,
+       col = "red")
+
+```
+Berdasarkan plot diatas dapat kita ketahui bahwa :
+
+- ...
+
+
+**4. Perceptions.Of.Corruption**
+```{r}
+# Perceptions.Of.Corruption
+coplot(Perceptions.Of.Corruption ~ Year|Country.Name,
+       type = "b",
+       data = balanced2,
+       rows = 1,
+       col = "red")
+```
+Berdasarkan Line plot diatas dapat kita ketahui bahwa :
+
+- Singapore dg tingkat persepsi korupsi terendah
+- Generally di SEA persepsi orang terhadap korupsi itu tinggi, mungkin di SEA kebanyakan percaya kalo pemerintah mereka akan korupsi
+
+***
+
+### Heterogenitas Life.Ledder
+
+Untuk melihat heterogenitas antar individu dan waktu kita dapat menggunakan fungsi `plotmeans()` dari package gplots dengan parameter:
+
+- formula : Target ~ variabel index individu/waktu
+- data    : data frame 
+
+**1. Heterogenitas antar negara**
+```{r}
+plotmeans( Life.Ladder ~ Country.Name, data = balanced2, main="Heterogenitas Life.Ladder antar Negara")
+```
+Insight : ...
+    
+
+**2. Heterogenitas antar Waktu**
+```{r}
+plotmeans(Life.Ladder ~ Year, data = balanced2, main="Heterogenitas Life.Ladder antar Tahun")
+```
+Insight : ...
+
+  
+***
+
+## Pemodelan
+
+### Cross-Validation
+Tahapan cross validation akan selalu dilakukan sebelum pembuatan model, data akan dibagi menjadi data train dan data test. Dikarenakan data panel memiliki informasi keterangan waktu maka pembagian data tidak boleh diambil secara acak melainkan dibagi dengan cara dipisah secara berurutan.
+
+- Data Train akan menggunakan data yang terlampau
+- Data Test akan menggunakan data yang terbaru
+
+untuk melakukannya kita bisa menggunakan bantuan fungsi `filter()`
+
+```{r}
+#membuat data train
+ladder_train <- 
+  
+#membuat data test
+ladder_test <- 
+```
+
+setelah dilakukan cross validation kita perlu memastikan kembali bahwa data train sudah balance dengan melakukan balancing
+
+```{r}
+ladder_train <- ladder_train %>% 
+  droplevel() %>%     # menghapus informasi waktu yang diambil sebagai data test (tahun 2022)
+  make.pbalanced()    # melakukan balancing kembali
+```
+
+***
+
+### Pemeriksaan Asumsi Multikolinieritas
+Dikarenakan pada hasil pemeriksaan korelasi pada tahapan EDA sebelumnya menunjukkan adanya indikasi multikolinieritas antar variabel prediktor, maka akan dilakukan pemeriksaan asumsi multikolinieritas terlebih dahulu dengan cara pembuatan model regresi dengan fungsi `lm()` dan dilanjutkan pengujian menggunakan fungsi `vif()`.
+
+nilai VIF > 10: terjadi multicollinearity pada model
+nilai VIF < 10: tidak terjadi multicollinearity pada model
+
+```{r}
+# your code here
+
+```
+Insight: 
+
+***
+
+### Penentuan Model Estimasi
+
+#### Pembuatan Model
+Untuk setiap pembuatan model akan digunakan fungsi `plm()` dari package plm dengan parameter sebagai berikut:
+
+- `formula` = Target ~ Prediktor
+- `data`    = berupa dataframe
+- `index`   = c("kolom_individu","kolom_waktu")
+- `model`   =
+  + `"pooling"` : untuk model CEM
+  + `"within"`  : untuk model FEM
+  + `"random"`  : untuk model REM
+
+dimana 
+
+- Variabel target : Life.Ladder
+- Variabel prediktor :  
+  + Log.GDP.Per.Capita
+  + Social.Support
+  + Perceptions.Of.Corruption
+  + Negative.Affect
+
+**Model Gabungan (CEM)**
+
+membuat Common effect model dan disimpan kedalam objek `cem`
+
+```{r}
+# membuat Common effect model 
+
+```
+
+**Model Pengaruh Tetap (FEM)**
+
+membuat model FEM dengan memberikan parameter tambahan `effect = "twoways"` untuk memasukan pengaruh individu dan waktu, kemudian disimpan kedalam objek `fem.two`
+
+```{r}
+# membuat fixed effect model 
+
+
+```
+
+**Uji Chow**
+
+Uji chow dilakukan untuk memilih model terbaik antara model gabungan (cem) dengan model fixed effec (fem). untuk melakukan uji Chow dapat menggunakan fungsi `pooltest(model_cem, model_fem)`
+
+Hipotesis yang diuji adalah sebagai berikut:
+
+- H0 : Model gabungan
+- H1 : Model pengaruh tetap
+
+H0 ditolak jika P-value < α. Nilai α yang digunakan sebesar 5%.
+```{r}
+# your code here
+
+```
+Berdasarkan hasil uji chow diatas, kita peroleh nilai p-value < α. artinya Model terbaik untuk digunakan pada data World Happines adalah fixed effect model.
+
+***
+
+**Model Pengaruh Acak (REM)**
+
+membuat random effect model dan disimpan kedalam objek `rem`
+```{r}
+# membuat random effect model 
+
+```
+
+**Uji Hausman**
+
+Untuk melakukan uji Chow di R dapat menggunakan fungsi `phtest(model_rem, model_fem)`, dengan Hipotesis yang diuji adalah sebagai berikut. 
+
+- H0 : Model pengaruh acak
+- H1 : Model pengaruh tetap
+
+Keputusan tolak H0 (model pengaruh tetap terpilih) apabila nilai p-value < α.
+
+```{r}
+# your code here
+
+```
+Berdasarkan hasil uji hausman diatas, kita peroleh nilai p-value < α. artinya Model terbaik untuk digunakan pada data World Happines adalah fixed effect model. Dikarenakan model fem adalah model terbaik maka tidak perlu dilakukan uji efek lanjutan, dan bisa langsung dilakukan pengujian asumsi.
+
+***
+
+#### Pengujian Asumsi
+
+**Normalitas**
+
+Hipotesis yang diuji adalah sebagai berikut.
+
+- H0 : Sisaan menyebar normal
+- H1 : Sisaan tidak menyebar normal
+
+H0 ditolak jika P-value < α. Nilai α yang digunakan sebesar 5%.
+```{r}
+# your code here
+
+```
+
+Berdasarkan hasil pengujian normalitas sisaan diperoleh nilai p-value > 0.05, artinya sisaan menyebar secara normal.
+
+**Homogenitas**
+
+Hipotesis yang diuji adalah sebagai berikut.
+
+- H0 : Sisaan memiliki ragam homogen
+- H1 : Sisaan tidak memiliki ragam homogen
+
+H0 ditolak jika P-value < α. Nilai α yang digunakan sebesar 5%.
+```{r}
+# your code here
+
+```
+Berdasarkan hasil pengujian homogenitas diperoleh nilai p-value > 0.05, artinya sisaan memiliki ragam yang homogen.
+
+**Autokorelasi**
+
+Hipotesis yang diuji adalah sebagai berikut.
+
+- H0 : tidak terjadi autokorelasi pada sisaan
+- H1 : terjadi autokorelasi pada sisaan
+
+H0 ditolak jika P-value < α. Nilai α yang digunakan sebesar 5%.
+```{r}
+# your code here
+
+```
+Berdasarkan hasil pengujian autokorelasi diperoleh nilai p-value < 0.05, artinya terjadi permasalahan autokorelasi antar sisaan.
+
+***
+
+### Interpretasi Model
+
+**1. Koefisien**
+```{r}
+# your code here
+
+```
+
+**2. Mengekstrak informasi Efek dari model fix**
+
+Untuk mengekstrak informasi efek dari model FEM kita dapat menggunakan fungsi `fixef(model fem)`,
+```{r}
+# your code here
+
+```
+
+
+***
+
+### Prediksi & Evaluasi
+Untuk melakukan prediksi akan kita gunakan fungsi `predict()`
+dengan parameter:
+
+- object = nama model yang kita gunakan
+- newdata = data baru yang akan kita prediksi
+
+```{r}
+# your code here
+
+```
+Untuk menguji apakah model yang kita miliki sudah baik dalam memprediksi data baru maka kita akan evaluasi dengan menggunakan nilai error, salah satu metric eror yang biasa digunakan adalah MAPE. Kita dapat melakukannya menggunakan fungsi `MAPE()` dengan parameter:
+
+- y_pred =  nilai hasil prediksi
+- y_true =  nilai target asli
+
+```{r}
+# your code here
+
+```
+Insight: ...
+
+***
+
+
+# Kesimpulan & Saran
+
+Dari serangkaian proses analisis yang telah dilakukan, dapat kita peroleh kesimpulan sebagai berikut:
+
+-
+-
+-
+
+
+# Reference
+
+1. Dataset:
+    - [BPS RI](https://www.bps.go.id/id)
+    - [World Happiness Report 2023](https://www.kaggle.com/datasets/usamabuttar/world-happiness-report-2005-present)
+
+2. [Principles of Econometrics with  R](https://bookdown.org/ccolonescu/RPoE4/)
+
+3. [Panel data Econometrics in R ](https://cran.r-project.org/web/packages/plm/vignettes/A_plmPackage.html)
+
+4. [Liniear Model for Panel Data](https://cran.r-project.org/web/packages/plm/plm.pdf)
+
+5. [Panel data using R](https://www.princeton.edu/~otorres/Panel101R.pdf)

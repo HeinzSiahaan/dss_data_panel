@@ -1,0 +1,2 @@
+"0","# membaca data pengangguran.csv"
+"0","read.csv(""data_input/penganguran.csv"")"

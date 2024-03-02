@@ -1,0 +1,6 @@
+"0","# Please type your code here"
+"0","# dplyr"
+"0","mutate(pengangguran,"
+"0","       Provinsi=as.factor(Provinsi),"
+"0","       status=""mengkhawatirkan"","
+"0","       X2015=0)"

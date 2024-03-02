@@ -1,0 +1,2 @@
+"0","# your code here"
+"0","pred <- predict(fem, ladder_test, na.fill = F)"

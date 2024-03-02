@@ -1,0 +1,3 @@
+"0","# membaca dan menyimpan data pengangguran.csv"
+"0","pengangguran <- read.csv(""data_input/penganguran.csv"",sep = "";"",check.names = F)"
+"0","pengangguran"

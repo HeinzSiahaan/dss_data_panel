@@ -1,0 +1,5 @@
+"0","#membuat data train"
+"0","ladder_train <- balanced2 %>% filter(Year != 2022) "
+"0","  "
+"0","#membuat data test"
+"0","ladder_test <- balanced2 %>% filter(Year == 2022)"

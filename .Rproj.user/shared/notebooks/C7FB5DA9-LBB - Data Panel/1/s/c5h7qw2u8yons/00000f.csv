@@ -1,0 +1,1 @@
+"0","plotmeans( Life.Ladder ~ Country.Name, data = balanced2, main=""Heterogenitas Life.Ladder antar Negara"")"

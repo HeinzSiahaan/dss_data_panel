@@ -1,0 +1,6 @@
+"0","# your code here"
+"0","long_jawa <- P_JAWA2 %>% pivot_longer(cols = c(""2015"",""2016"",""2017"",""2018""), "
+"0","                                      names_to = ""Tahun"", "
+"0","                                      values_to = ""Tingkat_Pengangguran"") %>%"
+"0","  mutate(Tahun=as.factor(Tahun))"
+"0","long_jawa"

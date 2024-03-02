@@ -1,0 +1,7 @@
+"0","# dengan dplyr dan metode piping"
+"0","P_JAWA2 <- pengangguran %>% "
+"0","  #select(-check) %>% "
+"0","  mutate(Provinsi = as.character(Provinsi)) %>% "
+"0","  filter(Provinsi %in% c(""BANTEN"",""DKI JAKARTA"",""JAWA BARAT"",""JAWA TENGAH"",""DI YOGYAKARTA"",""JAWA TIMUR""))"
+"0",""
+"0","P_JAWA2"
